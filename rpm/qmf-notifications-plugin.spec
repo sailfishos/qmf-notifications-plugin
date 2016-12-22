@@ -4,7 +4,7 @@ Version:    0.1.1
 Release:    1
 Group:      System/Libraries
 License:    BSD
-URL:        https://github.com/nemomobile/qmf-notifications-plugin
+URL:        https://git.merproject.org/mer-core/qmf-notifications-plugin
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(qmfclient5)
