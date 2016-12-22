@@ -401,19 +401,15 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
     // from read to unread ???
 
     foreach (const QMailMessageId &id, ids) {
-        const QMailMessageMetaData message(id);
         if (_publishedMessages.contains(id)) {
             // Check if message was read
+            const QMailMessageMetaData message(id);
             if (!notifyMessage(message)) {
                 _publishedMessages.remove(id);
                 _newMessages.remove(id);
             } else {
                 _updatedMessages.insert(id);
             }
-            _publicationChanges = true;
-        } else if (notifyMessage(message)) {
-            _publishedMessages.insert(id, constructMessageInfo(message));
-            _updatedMessages.insert(id);
             _publicationChanges = true;
         }
     }
