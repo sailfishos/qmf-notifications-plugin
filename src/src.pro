@@ -2,12 +2,11 @@ TEMPLATE = lib
 TARGET = notifications
 CONFIG += plugin hide_symbols
 
-QT += core
+QT += qmfclient qmfmessageserver
 QT -= gui
 
 CONFIG += link_pkgconfig
-LIBS += -lqmfmessageserver5 -lqmfclient5
-PKGCONFIG += qmfclient5 qmfmessageserver5 nemotransferengine-qt5 accounts-qt5 nemonotifications-qt5
+PKGCONFIG += nemotransferengine-qt5 accounts-qt5 nemonotifications-qt5
 
 SOURCES += \
     actionobserver.cpp \
@@ -50,6 +49,6 @@ engineering_english_install.CONFIG += no_check_exist
 QMAKE_EXTRA_TARGETS += ts engineering_english
 PRE_TARGETDEPS += ts engineering_english
 
-target.path = $$QMF_INSTALL_ROOT/lib/qmf/plugins5/messageserverplugins
+target.path = $$[QT_INSTALL_PLUGINS]/messageserverplugins
 
 INSTALLS += target ts_install engineering_english_install

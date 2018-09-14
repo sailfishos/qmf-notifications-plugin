@@ -7,8 +7,8 @@ License:    BSD
 URL:        https://git.merproject.org/mer-core/qmf-notifications-plugin
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
-BuildRequires:  pkgconfig(qmfclient5)
-BuildRequires:  pkgconfig(qmfmessageserver5)
+BuildRequires:  pkgconfig(QmfClient)
+BuildRequires:  pkgconfig(QmfMessageServer)
 BuildRequires:  pkgconfig(accounts-qt5) >= 1.13
 BuildRequires:  pkgconfig(nemotransferengine-qt5)
 BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.0.5
@@ -32,9 +32,8 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/qmf/plugins5/messageserverplugins/libnotifications.so
+%{_libdir}/qt5/plugins/messageserverplugins/libnotifications.so
 %{_datadir}/lipstick/notificationcategories/*.conf
-
 %{_datadir}/translations/qmf-notifications_eng_en.qm
 
 %package ts-devel

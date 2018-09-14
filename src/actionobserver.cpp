@@ -46,8 +46,7 @@
 // Utility function for debug proposes
 QString requestTypeToString(QMailServerRequestType t)
 {
-    switch(t)
-    {
+    switch(t) {
     case AcknowledgeNewMessagesRequestType:
         return QString("Acknowledging new messages");
     case TransmitMessagesRequestType:
@@ -133,7 +132,7 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
                 qWarning() << Q_FUNC_INFO <<  "Invalid account id, will not emit transmitFailed";
             }
         }
-        if(_runningInTransferEngine) {
+        if (_runningInTransferEngine) {
             //: Notifies in transfer-ui that email sync failed
             //% "Email Sync Failed"
             QString error = qtTrId("qmf-notification_email_sync_failed");
@@ -151,7 +150,7 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
                 qWarning() << Q_FUNC_INFO <<  "Invalid account id, will not emit transmitCompleted";
             }
         }
-        if(_runningInTransferEngine) {
+        if (_runningInTransferEngine) {
             _transferClient->finishTransfer(_transferId, TransferEngineClient::TransferFinished);
             _runningInTransferEngine = false;
         }
@@ -179,9 +178,9 @@ void RunningAction::progressChanged(uint value, uint total)
 
 void RunningAction::statusAccountIdChanged(const QMailAccountId &accountId)
 {
-    if(!accountId.isValid()){
+    if (!accountId.isValid()) {
         qDebug() << Q_FUNC_INFO << "Account " << accountId.toULongLong()
-                   << " was removed/disabled while action was in progress, no actions to report for invalid account.";
+                 << " was removed/disabled while action was in progress, no actions to report for invalid account.";
     } else if (!_runningInTransferEngine) {
         AccountInfo acctInfo = _accountsCache->accountInfo(static_cast<Accounts::AccountId>(accountId.toULongLong()));
         _transferId = _transferClient->createSyncEvent(acctInfo.name, QUrl(), acctInfo.providerIcon);
@@ -226,7 +225,7 @@ void ActionObserver::actionsChanged(QList<QSharedPointer<QMailActionInfo> > acti
 {
     foreach(QSharedPointer<QMailActionInfo> action, actionsList) {
         // discard actions already in the queue and fast actions to avoid spamming transfer-ui
-        if(!_runningActions.contains(action.data()->id()) && isNotificationAction(action.data()->requestType())
+        if (!_runningActions.contains(action.data()->id()) && isNotificationAction(action.data()->requestType())
                 && !_completedActions.contains(action.data()->id())) {
             RunningAction* runningAction = new RunningAction(action, _accountsCache, this);
             _runningActions.insert(action.data()->id(), runningAction);
