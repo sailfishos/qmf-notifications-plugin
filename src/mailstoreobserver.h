@@ -83,7 +83,6 @@ private:
     QMailStore *_storage;
     MessageHash _publishedMessages;
     QSet<QMailMessageId> _newMessages;
-    QSet<QMailMessageId> _updatedMessages;
 
     void reloadNotifications();
     void closeNotifications();
