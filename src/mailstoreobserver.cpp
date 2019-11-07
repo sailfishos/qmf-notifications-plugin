@@ -266,8 +266,8 @@ void MailStoreObserver::updateNotifications()
         const QMailMessageId messageId(it.key());
         const MessageInfo *message(it.value().data());
 
-        // Only republish this message if it has been updated
-        if (!_updatedMessages.contains(messageId) && !_newMessages.contains(messageId))
+        // Only republish this message if there is something to show
+        if (!_newMessages.contains(messageId))
             continue;
 
         Notification notification;
@@ -295,8 +295,6 @@ void MailStoreObserver::updateNotifications()
 
         notification.publish();
     }
-
-    _updatedMessages.clear();
 }
 
 // ################ Slots #####################
@@ -407,10 +405,8 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
             if (!notifyMessage(message)) {
                 _publishedMessages.remove(id);
                 _newMessages.remove(id);
-            } else {
-                _updatedMessages.insert(id);
+                _publicationChanges = true;
             }
-            _publicationChanges = true;
         }
     }
 }
