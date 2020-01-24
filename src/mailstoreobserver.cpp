@@ -41,11 +41,11 @@
 
 namespace {
 
-static const auto dbusService QStringLiteral("com.jolla.email.ui");
-static const auto dbusPath = QStringLiteral("/com/jolla/email/ui");
-static const auto dbusInterface  = QStringLiteral("com.jolla.email.ui");
+const auto dbusService QStringLiteral("com.jolla.email.ui");
+const auto dbusPath = QStringLiteral("/com/jolla/email/ui");
+const auto dbusInterface = QStringLiteral("com.jolla.email.ui");
 
-static const auto publishedMessageId = QStringLiteral("x-nemo.email.published-message-id");
+const auto publishedMessageId = QStringLiteral("x-nemo.email.published-message-id");
 
 QVariant remoteAction(const QString &name, const QString &displayName, const QString &method, const QVariantList &arguments = QVariantList())
 {
@@ -180,8 +180,11 @@ QSharedPointer<MessageInfo> MailStoreObserver::constructMessageInfo(const QMailM
 {
     MessageInfo* messageInfo = new MessageInfo();
     messageInfo->id = message.id();
-    messageInfo->origin = message.from().address().toLower();
-    messageInfo->sender = message.from().name();
+
+    QMailAddress mailAdress = message.from();
+
+    messageInfo->origin = mailAdress.address().toLower();
+    messageInfo->sender = mailAdress.name();
     messageInfo->subject = message.subject();
     messageInfo->timeStamp = message.date().toUTC();
     messageInfo->accountId = message.parentAccountId();
