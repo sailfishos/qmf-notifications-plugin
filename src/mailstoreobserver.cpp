@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013-2014 Jolla Ltd.
+ * Copyright (c) 2013 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
  * Contact: Valerio Valerio <valerio.valerio@jollamobile.com>
  *
  * This file is part of qmf-notifications-plugin
@@ -40,9 +41,11 @@
 
 namespace {
 
-const QString dbusService(QStringLiteral("com.jolla.email.ui"));
-const QString dbusPath(QStringLiteral("/com/jolla/email/ui"));
-const QString dbusInterface(QStringLiteral("com.jolla.email.ui"));
+static const auto dbusService QStringLiteral("com.jolla.email.ui");
+static const auto dbusPath = QStringLiteral("/com/jolla/email/ui");
+static const auto dbusInterface  = QStringLiteral("com.jolla.email.ui");
+
+static const auto publishedMessageId = QStringLiteral("x-nemo.email.published-message-id");
 
 QVariant remoteAction(const QString &name, const QString &displayName, const QString &method, const QVariantList &arguments = QVariantList())
 {
@@ -114,7 +117,7 @@ void MailStoreObserver::reloadNotifications()
     QList<QObject *> existingNotifications(Notification::notifications());
     foreach (QObject *obj, existingNotifications) {
         if (Notification *notification = qobject_cast<Notification *>(obj)) {
-            const QString publishedId(notification->hintValue("x-nemo.email.published-message-id").toString());
+            const QString publishedId(notification->hintValue(publishedMessageId).toString());
             const QMailMessageId messageId(QMailMessageId(publishedId.toULongLong()));
 
             bool published = false;
@@ -158,7 +161,7 @@ void MailStoreObserver::closeAccountNotifications(const QMailAccountId &accountI
     QList<QObject *> existingNotifications(Notification::notifications());
     foreach (QObject *obj, existingNotifications) {
         if (Notification *notification = qobject_cast<Notification *>(obj)) {
-            const QString publishedId(notification->hintValue("x-nemo.email.published-message-id").toString());
+            const QString publishedId(notification->hintValue(publishedMessageId).toString());
             const QMailMessageId messageId(QMailMessageId(publishedId.toULongLong()));
             if (messageId.isValid()) {
                 const QMailMessageMetaData message(messageId);
@@ -249,7 +252,7 @@ void MailStoreObserver::updateNotifications()
     QList<QObject *> existingNotifications(Notification::notifications());
     foreach (QObject *obj, existingNotifications) {
         if (Notification *notification = qobject_cast<Notification *>(obj)) {
-            const QString publishedId(notification->hintValue("x-nemo.email.published-message-id").toString());
+            const QString publishedId(notification->hintValue(publishedMessageId).toString());
             const QMailMessageId messageId(QMailMessageId(publishedId.toULongLong()));
             if (!_publishedMessages.contains(messageId)) {
                 notification->close();
@@ -278,7 +281,7 @@ void MailStoreObserver::updateNotifications()
         notification.setAppName(properties.first);
         notification.setAppIcon(properties.second);
         notification.setCategory("x-nemo.email");
-        notification.setHintValue("x-nemo.email.published-message-id", QString::number(messageId.toULongLong()));
+        notification.setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
         notification.setSummary(message->sender.isEmpty() ? message->origin : message->sender);
         notification.setBody(message->subject);
         notification.setTimestamp(message->timeStamp);
