@@ -62,6 +62,17 @@ QVariantList remoteActionList(const QString &name, const QString &displayName, c
     return rv;
 }
 
+void initNotification(Notification *notification)
+{
+    if (!notification) {
+        return;
+    }
+
+    notification->setAppIcon("icon-lock-email");
+    notification->setUrgency(Notification::Critical);
+    notification->setHintValue("x-nemo-priority", 100);
+}
+
 QPair<QString, QString> accountProperties(const QMailAccountId &accountId)
 {
     static QHash<QMailAccountId, QPair<QString, QString> > properties;
@@ -211,7 +222,9 @@ bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
 void MailStoreObserver::notifyOnly()
 {
     Notification notification;
-    notification.setCategory("x-nemo.email.summary");
+    initNotification(&notification);
+    notification.setIsTransient(true);
+    notification.setHintValue("x-nemo-feedback", QStringLiteral("email"));
     notification.publish();
 }
 
@@ -281,9 +294,10 @@ void MailStoreObserver::updateNotifications()
         // Group emails by their source account name
         QPair<QString, QString> properties(accountProperties(message->accountId));
 
+        initNotification(&notification);
         notification.setAppName(properties.first);
         notification.setAppIcon(properties.second);
-        notification.setCategory("x-nemo.email");
+        notification.setHintValue("x-nemo-feedback", "email_exists");
         notification.setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
         notification.setSummary(message->sender.isEmpty() ? message->origin : message->sender);
         notification.setBody(message->subject);
@@ -318,7 +332,9 @@ void MailStoreObserver::actionsCompleted()
                 notifyOnly();
             } else {
                 Notification summaryNotification;
-                summaryNotification.setCategory("x-nemo.email.summary");
+                initNotification(&summaryNotification);
+                summaryNotification.setIsTransient(true);
+                summaryNotification.setHintValue("x-nemo-feedback", QStringLiteral("email"));
 
                 if (_newMessages.count() == 1) {
                     const QMailMessageId messageId(*_newMessages.begin());
@@ -463,7 +479,7 @@ void MailStoreObserver::transmitFailed(const QMailAccountId &accountId)
 
     Notification sendFailure;
     sendFailure.setAppName(appName);
-    sendFailure.setCategory("x-nemo.email.error");
+    initNotification(&sendFailure);
     sendFailure.setHintValue("x-nemo.email.sendFailed-accountId", accountId.toULongLong());
     sendFailure.setPreviewSummary(summary);
     sendFailure.setPreviewBody(previewBody);

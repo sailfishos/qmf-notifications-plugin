@@ -21,8 +21,6 @@ HEADERS += \
     mailstoreobserver.h
 
 OTHER_FILES += \
-    x-nemo.email.conf \
-    x-nemo.email.error.conf \
     rpm/qmf-notifications-plugin.spec
 
 # translations
