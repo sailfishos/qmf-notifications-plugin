@@ -301,8 +301,9 @@ void MailStoreObserver::updateNotifications()
         notification.setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
         notification.setSummary(message->sender.isEmpty() ? message->origin : message->sender);
         notification.setBody(message->subject);
+        notification.clearPreviewSummary();
+        notification.clearPreviewBody();
         notification.setTimestamp(message->timeStamp);
-        notification.setItemCount(1);
 
         const QVariant varId(static_cast<int>(messageId.toULongLong()));
         notification.setRemoteActions(::remoteActionList("default", "", "openMessage", QVariantList() << varId));
@@ -467,9 +468,6 @@ void MailStoreObserver::transmitFailed(const QMailAccountId &accountId)
     //: Summary of email sending failed notification
     //% "Email sending failed"
     QString summary = qtTrId("qmf-notification_send_failed_summary");
-    //: Preview of email sending failed notification
-    //% "Failed to send email from account %1"
-    QString previewBody = qtTrId("qmf-notification_send_failed_previewBody").arg(accountName);
     //: Body of email sending failed notification
     //% "Account %1"
     QString body = qtTrId("qmf-notification_send_failed_Body").arg(accountName);
@@ -481,8 +479,6 @@ void MailStoreObserver::transmitFailed(const QMailAccountId &accountId)
     sendFailure.setAppName(appName);
     initNotification(&sendFailure);
     sendFailure.setHintValue("x-nemo.email.sendFailed-accountId", accountId.toULongLong());
-    sendFailure.setPreviewSummary(summary);
-    sendFailure.setPreviewBody(previewBody);
     sendFailure.setSummary(summary);
     sendFailure.setBody(body);
     sendFailure.setRemoteAction(::remoteAction("default", "", "openOutbox", QVariantList() << acctId));
