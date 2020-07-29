@@ -32,7 +32,6 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %{_libdir}/qt5/plugins/messageserverplugins/libnotifications.so
-%{_datadir}/lipstick/notificationcategories/*.conf
 %{_datadir}/translations/qmf-notifications_eng_en.qm
 
 %package ts-devel
