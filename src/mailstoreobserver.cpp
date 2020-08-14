@@ -68,6 +68,8 @@ void initNotification(Notification *notification)
         return;
     }
 
+    //% "Mail"
+    notification->setAppName(qtTrId("qmf-notification_mail"));
     notification->setAppIcon("icon-lock-email");
     notification->setUrgency(Notification::Critical);
     notification->setHintValue("x-nemo-priority", 100);
@@ -471,12 +473,8 @@ void MailStoreObserver::transmitFailed(const QMailAccountId &accountId)
     //: Body of email sending failed notification
     //% "Account %1"
     QString body = qtTrId("qmf-notification_send_failed_Body").arg(accountName);
-    //: Name of notification group for error notifications
-    //% "Warnings"
-    QString appName = qtTrId("qmf-notification_error_group");
 
     Notification sendFailure;
-    sendFailure.setAppName(appName);
     initNotification(&sendFailure);
     sendFailure.setHintValue("x-nemo.email.sendFailed-accountId", accountId.toULongLong());
     sendFailure.setSummary(summary);
