@@ -52,14 +52,24 @@ QVariant remoteAction(const QString &name, const QString &displayName, const QSt
     return Notification::remoteAction(name, displayName, dbusService, dbusPath, dbusInterface, method, arguments);
 }
 
-QVariantList remoteActionList(const QString &name, const QString &displayName, const QString &method, const QVariantList &arguments = QVariantList())
+QVariantList singleMessageRemoteActionList(const MessageInfo &messageInfo)
 {
-    QVariantList rv;
+    const int messageId = static_cast<int>(messageInfo.id.toULongLong());
+    QVariantList messageArg(QVariantList () << messageId);
 
-    rv.append(remoteAction(name, displayName, method, arguments));
-    rv.append(remoteAction("app", "", "openCombinedInbox"));
+    QVariantList actions;
+    actions << ::remoteAction("default", "", "openMessage", messageArg);
+    //: Reply to this email
+    //% "Reply"
+    actions << ::remoteAction("", qtTrId("qmf-notification_reply_one"), "replyToMessage", messageArg);
 
-    return rv;
+    if (messageInfo.hasMultipleRecipients) {
+        //: Reply to all recipients of this email
+        //% "Reply all"
+        actions << ::remoteAction("", qtTrId("qmf-notification_reply_all"), "replyAllToMessage", messageArg);
+    }
+
+    return actions;
 }
 
 void initNotification(Notification *notification)
@@ -201,6 +211,7 @@ QSharedPointer<MessageInfo> MailStoreObserver::constructMessageInfo(const QMailM
     messageInfo->subject = message.subject();
     messageInfo->timeStamp = message.date().toUTC();
     messageInfo->accountId = message.parentAccountId();
+    messageInfo->hasMultipleRecipients = message.recipients().count() > 1;
 
     return QSharedPointer<MessageInfo>(messageInfo);
 }
@@ -306,9 +317,7 @@ void MailStoreObserver::updateNotifications()
         notification.clearPreviewSummary();
         notification.clearPreviewBody();
         notification.setTimestamp(message->timeStamp);
-
-        const QVariant varId(static_cast<int>(messageId.toULongLong()));
-        notification.setRemoteActions(::remoteActionList("default", "", "openMessage", QVariantList() << varId));
+        notification.setRemoteActions(singleMessageRemoteActionList(*message));
 
         QHash<QMailMessageId, int>::iterator it(existingMessageNotificationIds.find(messageId));
         if (it != existingMessageNotificationIds.end()) {
@@ -345,9 +354,7 @@ void MailStoreObserver::actionsCompleted()
 
                     summaryNotification.setPreviewSummary(message->sender.isEmpty() ? message->origin : message->sender);
                     summaryNotification.setPreviewBody(message->subject);
-
-                    const QVariant varId(static_cast<int>(messageId.toULongLong()));
-                    summaryNotification.setRemoteAction(::remoteAction("default", "", "openMessage", QVariantList() << varId));
+                    summaryNotification.setRemoteActions(singleMessageRemoteActionList(*message));
 
                     // Override the icon to be the icon associated with this account
                     QMailAccount account(message->accountId);

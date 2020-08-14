@@ -53,6 +53,7 @@ struct MessageInfo
     QString subject;
     QDateTime timeStamp;
     QMailAccountId accountId;
+    bool hasMultipleRecipients;
 };
 
 class MailStoreObserver : public QObject
