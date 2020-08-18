@@ -43,65 +43,6 @@
 #include <QTimer>
 #include <QDebug>
 
-// Utility function for debug proposes
-QString requestTypeToString(QMailServerRequestType t)
-{
-    switch(t) {
-    case AcknowledgeNewMessagesRequestType:
-        return QString("Acknowledging new messages");
-    case TransmitMessagesRequestType:
-        return QString("Transmitting new messages");
-    case RetrieveFolderListRequestType:
-        return QString("Retrieving a list of folders");
-    case RetrieveMessageListRequestType:
-        return QString("Retrieving a list of message");
-    case RetrieveMessagesRequestType:
-        return QString("Retrieving messages");
-    case RetrieveMessagePartRequestType:
-        return QString("Retrieving part of a message");
-    case RetrieveMessageRangeRequestType:
-        return QString("Retrieving a range of messages");
-    case RetrieveMessagePartRangeRequestType:
-        return QString("Retrieving parts of a messages");
-    case RetrieveAllRequestType:
-        return QString("Retrieving everything");
-    case ExportUpdatesRequestType:
-        return QString("Exporting updates");
-    case SynchronizeRequestType:
-        return QString("Synchronizing");
-    case CopyMessagesRequestType:
-        return QString("Copying messages");
-    case MoveMessagesRequestType:
-        return QString("Moving messages");
-    case FlagMessagesRequestType:
-        return QString("Flagging messages");
-    case CreateFolderRequestType:
-        return QString("Creating a folder");
-    case RenameFolderRequestType:
-        return QString("Renaming a folder");
-    case DeleteFolderRequestType:
-        return QString("Deleting a folder");
-    case CancelTransferRequestType:
-        return QString("Canceling a transfer");
-    case DeleteMessagesRequestType:
-        return QString("Deleteing a message");
-    case SearchMessagesRequestType:
-        return QString("Searching");
-    case CancelSearchRequestType:
-        return QString("Cancelling search");
-    case ListActionsRequestType:
-        return QString("Listing actions");
-    case ProtocolRequestRequestType:
-        return QString("Direct protocol request");
-    case RetrieveNewMessagesRequestType:
-        return QString("Retrieve new messages");
-        // No default, to get warning when requests added
-    }
-
-    qWarning() << "Did not handle:" << t;
-    return QString("Unknown/handled request.");
-}
-
 RunningAction::RunningAction(QSharedPointer<QMailActionInfo> action,
                              AccountsCache *accountsCache, QObject *parent) :
     QObject(parent),
