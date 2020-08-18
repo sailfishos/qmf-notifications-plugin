@@ -319,10 +319,10 @@ void MailStoreObserver::updateNotifications()
         notification.setTimestamp(message->timeStamp);
         notification.setRemoteActions(singleMessageRemoteActionList(*message));
 
-        QHash<QMailMessageId, int>::iterator it(existingMessageNotificationIds.find(messageId));
-        if (it != existingMessageNotificationIds.end()) {
+        QHash<QMailMessageId, int>::iterator existingNotif(existingMessageNotificationIds.find(messageId));
+        if (existingNotif != existingMessageNotificationIds.end()) {
             // Replace the existing notification for this message
-            notification.setReplacesId(it.value());
+            notification.setReplacesId(existingNotif.value());
         }
 
         notification.publish();
