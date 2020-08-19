@@ -106,10 +106,15 @@ void AccountsCache::enabledEvent(Accounts::AccountId accountId)
 
 // ############### Public functions #####################
 
-AccountInfo AccountsCache::accountInfo(const Accounts::AccountId accountId){
-    Q_ASSERT(_accountsList.contains(accountId));
-
+AccountInfo AccountsCache::accountInfo(const Accounts::AccountId accountId)
+{
     AccountInfo accInfo;
+
+    if (!_accountsList.contains(accountId)) {
+        qWarning() << "AccountInfo called with unknown account";
+        return accInfo;
+    }
+
     accInfo.name = _accountsList.value(accountId)->displayName();
     Accounts::Provider provider = _manager->provider(_accountsList.value(accountId)->providerName());
     accInfo.providerIcon = QUrl(provider.iconName());
