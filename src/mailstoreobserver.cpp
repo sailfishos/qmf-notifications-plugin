@@ -81,7 +81,7 @@ void initNotification(Notification *notification)
     //% "Mail"
     notification->setAppName(qtTrId("qmf-notification_mail"));
     notification->setAppIcon("icon-lock-email");
-    notification->setUrgency(Notification::Critical);
+    notification->setHintValue(QStringLiteral("x-nemo-display-on"), true);
     notification->setHintValue("x-nemo-priority", 100);
 }
 

@@ -1,6 +1,6 @@
 Name:       qmf-notifications-plugin
 Summary:    Notifications plugin for Qt Messaging Framework (QMF)
-Version:    0.1.1
+Version:    0.2.7
 Release:    1
 License:    BSD
 URL:        https://git.merproject.org/mer-core/qmf-notifications-plugin
