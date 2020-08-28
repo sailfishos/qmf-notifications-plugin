@@ -88,6 +88,8 @@ private:
     void reloadNotifications();
     void closeNotifications();
     void closeAccountNotifications(const QMailAccountId &accountId);
+    void notificationClosed(uint reason);
+    void notificationActionInvoked(const QString &name);
     QSharedPointer<MessageInfo> constructMessageInfo(const QMailMessageMetaData &message);
     bool notifyMessage(const QMailMessageMetaData &message);
     void notifyOnly();
