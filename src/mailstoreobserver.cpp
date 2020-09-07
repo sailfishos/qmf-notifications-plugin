@@ -231,8 +231,9 @@ bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
 {
     if (message.messageType()==QMailMessage::Email &&
         !(message.status() & QMailMessage::Read) &&
-        !(message.status() & QMailMessage::Temporary)&&
+        !(message.status() & QMailMessage::Temporary) &&
         !(message.status() & QMailMessage::NoNotification) &&
+        !(message.status() & QMailMessage::Junk) &&
         !(message.status() & QMailMessage::Trash)) {
         return true;
     } else {
