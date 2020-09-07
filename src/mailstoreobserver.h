@@ -84,6 +84,7 @@ private:
     QMailStore *_storage;
     MessageHash _publishedMessages;
     QSet<QMailMessageId> _newMessages;
+    QHash<QMailAccountId, QList<QMailFolderId>> _tempFoldersToSync;
 
     void reloadNotifications();
     void closeNotifications();
@@ -92,6 +93,8 @@ private:
     bool notifyMessage(const QMailMessageMetaData &message);
     void notifyOnly();
     void updateNotifications();
+    void clearFoldersToSync();
+    bool messageInFolderToSync(const QMailMessageMetaData &message);
 };
 
 #endif // MAILSTOREOBSERVER_H
