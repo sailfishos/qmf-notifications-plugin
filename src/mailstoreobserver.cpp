@@ -145,6 +145,7 @@ void MailStoreObserver::reloadNotifications()
     const QMailAccountIdList enabledAccounts(QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
                                                                                  & QMailAccountKey::status(QMailAccount::Enabled)));
 
+    clearFoldersToSync();
     // Find the set of messages we've previously published notifications for
     QList<QObject *> existingNotifications(Notification::notifications());
     for (QObject *obj : existingNotifications) {
@@ -231,9 +232,11 @@ bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
 {
     if (message.messageType()==QMailMessage::Email &&
         !(message.status() & QMailMessage::Read) &&
-        !(message.status() & QMailMessage::Temporary)&&
+        !(message.status() & QMailMessage::Temporary) &&
         !(message.status() & QMailMessage::NoNotification) &&
-        !(message.status() & QMailMessage::Trash)) {
+        !(message.status() & QMailMessage::Junk) &&
+        !(message.status() & QMailMessage::Trash) &&
+        messageInFolderToSync(message)) {
         return true;
     } else {
         return false;
@@ -435,6 +438,8 @@ void MailStoreObserver::notificationActionInvoked(const QString &name)
 
 void MailStoreObserver::addMessages(const QMailMessageIdList &ids)
 {
+    clearFoldersToSync();
+
     for (const QMailMessageId &id : ids) {
         const QMailMessageMetaData message(id);
 
@@ -464,6 +469,7 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
 {
     // TODO: notify messages that we already have and change the status
     // from read to unread ???
+    clearFoldersToSync();
 
     for (const QMailMessageId &id : ids) {
         if (_publishedMessages.contains(id)) {
@@ -558,6 +564,27 @@ void MailStoreObserver::accountInboxDisplayed(int accountId)
     QMailAccountId acctId(accountId);
     if (acctId.isValid()) {
         closeAccountNotifications(acctId);
+    }
+}
+
+void MailStoreObserver::clearFoldersToSync()
+{
+    _tempFoldersToSync.clear();
+}
+
+bool MailStoreObserver::messageInFolderToSync(const QMailMessageMetaData &message)
+{
+    QMailAccountId accountId = message.parentAccountId();
+    QMailFolderId folderId = message.parentFolderId();
+
+    // Optimise by only getting the folder list once for each account
+    if (_tempFoldersToSync.contains(accountId)) {
+        QList<QMailFolderId> const &folders = _tempFoldersToSync.value(accountId);
+        return folders.contains(folderId);
+    } else {
+        QList<QMailFolderId> const &folders = QMailAccount(accountId).foldersToSync();
+        _tempFoldersToSync.insert(accountId, folders);
+        return folders.contains(folderId);
     }
 }
 
