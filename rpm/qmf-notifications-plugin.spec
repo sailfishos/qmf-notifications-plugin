@@ -10,7 +10,7 @@ BuildRequires:  pkgconfig(QmfClient)
 BuildRequires:  pkgconfig(QmfMessageServer)
 BuildRequires:  pkgconfig(accounts-qt5) >= 1.13
 BuildRequires:  pkgconfig(nemotransferengine-qt5)
-BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.2.6
+BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.2.1.1
 BuildRequires:  pkgconfig(nemoemail-qt5)
 BuildRequires:  qt5-qttools-linguist
 
