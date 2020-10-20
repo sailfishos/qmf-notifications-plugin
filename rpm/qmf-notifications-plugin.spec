@@ -1,6 +1,6 @@
 Name:       qmf-notifications-plugin
 Summary:    Notifications plugin for Qt Messaging Framework (QMF)
-Version:    0.1.1
+Version:    0.2.7
 Release:    1
 License:    BSD
 URL:        https://git.merproject.org/mer-core/qmf-notifications-plugin
@@ -10,7 +10,8 @@ BuildRequires:  pkgconfig(QmfClient)
 BuildRequires:  pkgconfig(QmfMessageServer)
 BuildRequires:  pkgconfig(accounts-qt5) >= 1.13
 BuildRequires:  pkgconfig(nemotransferengine-qt5)
-BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.0.5
+BuildRequires:  pkgconfig(nemonotifications-qt5) >= 1.2.1.1
+BuildRequires:  pkgconfig(nemoemail-qt5)
 BuildRequires:  qt5-qttools-linguist
 
 %description
@@ -32,7 +33,6 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %{_libdir}/qt5/plugins/messageserverplugins/libnotifications.so
-%{_datadir}/lipstick/notificationcategories/*.conf
 %{_datadir}/translations/qmf-notifications_eng_en.qm
 
 %package ts-devel

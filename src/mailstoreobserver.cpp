@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2013 - 2019 Jolla Ltd.
  * Copyright (c) 2019 Open Mobile Platform LLC.
- * Contact: Valerio Valerio <valerio.valerio@jollamobile.com>
  *
  * This file is part of qmf-notifications-plugin
  *
@@ -35,6 +34,9 @@
 
 #include "mailstoreobserver.h"
 
+// nemoemail-qt5
+#include <emailagent.h>
+
 // Qt
 #include <QDBusConnection>
 #include <QDebug>
@@ -46,20 +48,50 @@ const auto dbusPath = QStringLiteral("/com/jolla/email/ui");
 const auto dbusInterface = QStringLiteral("com.jolla.email.ui");
 
 const auto publishedMessageId = QStringLiteral("x-nemo.email.published-message-id");
+const auto markAsReadAction = QStringLiteral("markAsRead");
 
 QVariant remoteAction(const QString &name, const QString &displayName, const QString &method, const QVariantList &arguments = QVariantList())
 {
     return Notification::remoteAction(name, displayName, dbusService, dbusPath, dbusInterface, method, arguments);
 }
 
-QVariantList remoteActionList(const QString &name, const QString &displayName, const QString &method, const QVariantList &arguments = QVariantList())
+QVariantList singleMessageRemoteActionList(Notification *notification, const MessageInfo &messageInfo)
 {
-    QVariantList rv;
+    const int messageId = static_cast<int>(messageInfo.id.toULongLong());
+    QVariantList messageArg(QVariantList () << messageId);
 
-    rv.append(remoteAction(name, displayName, method, arguments));
-    rv.append(remoteAction("app", "", "openCombinedInbox"));
+    QVariantList actions;
+    actions << ::remoteAction("default", QString(), "openMessage", messageArg);
 
-    return rv;
+    if (messageInfo.hasMultipleRecipients) {
+        //: Reply to all recipients of this email
+        //% "Reply all"
+        actions << ::remoteAction(QString(), qtTrId("qmf-notification_reply_all"), "replyAllToMessage", messageArg);
+    } else {
+        //: Reply to this email
+        //% "Reply"
+        actions << ::remoteAction(QString(), qtTrId("qmf-notification_reply_one"), "replyToMessage", messageArg);
+    }
+
+    //: Mark an email as "read"
+    //% "Mark as read"
+    actions << Notification::remoteAction(markAsReadAction, qtTrId("qmf-notification_mark_as_read"));
+    notification->setProperty("messageId", messageId);
+
+    return actions;
+}
+
+void initNotification(Notification *notification)
+{
+    if (!notification) {
+        return;
+    }
+
+    //% "Mail"
+    notification->setAppName(qtTrId("qmf-notification_mail"));
+    notification->setAppIcon("icon-lock-email");
+    notification->setHintValue(QStringLiteral("x-nemo-display-on"), true);
+    notification->setHintValue("x-nemo-priority", 100);
 }
 
 QPair<QString, QString> accountProperties(const QMailAccountId &accountId)
@@ -113,6 +145,7 @@ void MailStoreObserver::reloadNotifications()
     const QMailAccountIdList enabledAccounts(QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
                                                                                  & QMailAccountKey::status(QMailAccount::Enabled)));
 
+    clearFoldersToSync();
     // Find the set of messages we've previously published notifications for
     QList<QObject *> existingNotifications(Notification::notifications());
     for (QObject *obj : existingNotifications) {
@@ -188,6 +221,7 @@ QSharedPointer<MessageInfo> MailStoreObserver::constructMessageInfo(const QMailM
     messageInfo->subject = message.subject();
     messageInfo->timeStamp = message.date().toUTC();
     messageInfo->accountId = message.parentAccountId();
+    messageInfo->hasMultipleRecipients = message.recipients().count() > 1;
 
     return QSharedPointer<MessageInfo>(messageInfo);
 }
@@ -198,9 +232,11 @@ bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
 {
     if (message.messageType()==QMailMessage::Email &&
         !(message.status() & QMailMessage::Read) &&
-        !(message.status() & QMailMessage::Temporary)&&
+        !(message.status() & QMailMessage::Temporary) &&
         !(message.status() & QMailMessage::NoNotification) &&
-        !(message.status() & QMailMessage::Trash)) {
+        !(message.status() & QMailMessage::Junk) &&
+        !(message.status() & QMailMessage::Trash) &&
+        messageInFolderToSync(message)) {
         return true;
     } else {
         return false;
@@ -211,7 +247,9 @@ bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
 void MailStoreObserver::notifyOnly()
 {
     Notification notification;
-    notification.setCategory("x-nemo.email.summary");
+    initNotification(&notification);
+    notification.setIsTransient(true);
+    notification.setHintValue("x-nemo-feedback", QStringLiteral("email"));
     notification.publish();
 }
 
@@ -276,30 +314,34 @@ void MailStoreObserver::updateNotifications()
         if (!_newMessages.contains(messageId))
             continue;
 
-        Notification notification;
+        Notification *notification = new Notification(this);
+        connect(notification, &Notification::closed,
+                this, &MailStoreObserver::notificationClosed);
+        connect(notification, &Notification::actionInvoked,
+                this, &MailStoreObserver::notificationActionInvoked);
 
         // Group emails by their source account name
         QPair<QString, QString> properties(accountProperties(message->accountId));
 
-        notification.setAppName(properties.first);
-        notification.setAppIcon(properties.second);
-        notification.setCategory("x-nemo.email");
-        notification.setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
-        notification.setSummary(message->sender.isEmpty() ? message->origin : message->sender);
-        notification.setBody(message->subject);
-        notification.setTimestamp(message->timeStamp);
-        notification.setItemCount(1);
+        initNotification(notification);
+        notification->setAppName(properties.first);
+        notification->setAppIcon(properties.second);
+        notification->setHintValue("x-nemo-feedback", "email_exists");
+        notification->setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
+        notification->setSummary(message->sender.isEmpty() ? message->origin : message->sender);
+        notification->setBody(message->subject);
+        notification->clearPreviewSummary();
+        notification->clearPreviewBody();
+        notification->setTimestamp(message->timeStamp);
+        notification->setRemoteActions(singleMessageRemoteActionList(notification, *message));
 
-        const QVariant varId(static_cast<int>(messageId.toULongLong()));
-        notification.setRemoteActions(::remoteActionList("default", "", "openMessage", QVariantList() << varId));
-
-        QHash<QMailMessageId, int>::iterator it(existingMessageNotificationIds.find(messageId));
-        if (it != existingMessageNotificationIds.end()) {
+        QHash<QMailMessageId, int>::iterator existingNotif(existingMessageNotificationIds.find(messageId));
+        if (existingNotif != existingMessageNotificationIds.end()) {
             // Replace the existing notification for this message
-            notification.setReplacesId(it.value());
+            notification->setReplacesId(existingNotif.value());
         }
 
-        notification.publish();
+        notification->publish();
     }
 }
 
@@ -317,26 +359,31 @@ void MailStoreObserver::actionsCompleted()
             if (_appOnScreen) {
                 notifyOnly();
             } else {
-                Notification summaryNotification;
-                summaryNotification.setCategory("x-nemo.email.summary");
+                Notification *summaryNotification = new Notification(this);
+                connect(summaryNotification, &Notification::closed,
+                        this, &MailStoreObserver::notificationClosed);
+                connect(summaryNotification, &Notification::actionInvoked,
+                        this, &MailStoreObserver::notificationActionInvoked);
+
+                initNotification(summaryNotification);
+                summaryNotification->setIsTransient(true);
+                summaryNotification->setHintValue("x-nemo-feedback", QStringLiteral("email"));
 
                 if (_newMessages.count() == 1) {
                     const QMailMessageId messageId(*_newMessages.begin());
                     const MessageInfo *message(_publishedMessages[messageId].data());
 
-                    summaryNotification.setPreviewSummary(message->sender.isEmpty() ? message->origin : message->sender);
-                    summaryNotification.setPreviewBody(message->subject);
-
-                    const QVariant varId(static_cast<int>(messageId.toULongLong()));
-                    summaryNotification.setRemoteAction(::remoteAction("default", "", "openMessage", QVariantList() << varId));
+                    summaryNotification->setPreviewSummary(message->sender.isEmpty() ? message->origin : message->sender);
+                    summaryNotification->setPreviewBody(message->subject);
+                    summaryNotification->setRemoteActions(singleMessageRemoteActionList(summaryNotification, *message));
 
                     // Override the icon to be the icon associated with this account
                     QMailAccount account(message->accountId);
-                    summaryNotification.setAppIcon(account.iconPath());
+                    summaryNotification->setAppIcon(account.iconPath());
                 } else {
                     //: Summary of new email(s) notification
                     //% "You have %n new email(s)"
-                    summaryNotification.setPreviewSummary(qtTrId("qmf-notification_new_email_banner_notification", _newMessages.count()));
+                    summaryNotification->setPreviewSummary(qtTrId("qmf-notification_new_email_banner_notification", _newMessages.count()));
 
                     // Find if these messages are all for the same account
                     QMailAccountId firstAccountId;
@@ -353,18 +400,18 @@ void MailStoreObserver::actionsCompleted()
                     if (firstAccountId.isValid()) {
                         // Show the inbox for this account
                         const QVariant varId(static_cast<int>(firstAccountId.toULongLong()));
-                        summaryNotification.setRemoteAction(::remoteAction("default", "", "openInbox", QVariantList() << varId));
+                        summaryNotification->setRemoteAction(::remoteAction("default", QString(), "openInbox", QVariantList() << varId));
 
                         // Also override the icon to be the icon associated with this account
                         QMailAccount account(firstAccountId);
-                        summaryNotification.setAppIcon(account.iconPath());
+                        summaryNotification->setAppIcon(account.iconPath());
                     } else {
                         // Multiple accounts - show the combined inbox
-                        summaryNotification.setRemoteAction(::remoteAction("default", "", "openCombinedInbox"));
+                        summaryNotification->setRemoteAction(::remoteAction("default", QString(), "openCombinedInbox"));
                     }
                 }
 
-                summaryNotification.publish();
+                summaryNotification->publish();
             }
 
             _newMessages.clear();
@@ -372,8 +419,27 @@ void MailStoreObserver::actionsCompleted()
     }
 }
 
+void MailStoreObserver::notificationClosed(uint reason)
+{
+    Q_UNUSED(reason)
+    Notification *notification = qobject_cast<Notification*>(sender());
+    notification->deleteLater();
+}
+
+void MailStoreObserver::notificationActionInvoked(const QString &name)
+{
+    Notification *notification = qobject_cast<Notification*>(sender());
+    const int messageId = notification->property("messageId").toInt();
+    if (name == markAsReadAction) {
+        EmailAgent *agent = EmailAgent::instance();
+        agent->markMessageAsRead(messageId);
+    }
+}
+
 void MailStoreObserver::addMessages(const QMailMessageIdList &ids)
 {
+    clearFoldersToSync();
+
     for (const QMailMessageId &id : ids) {
         const QMailMessageMetaData message(id);
 
@@ -403,6 +469,7 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
 {
     // TODO: notify messages that we already have and change the status
     // from read to unread ???
+    clearFoldersToSync();
 
     for (const QMailMessageId &id : ids) {
         if (_publishedMessages.contains(id)) {
@@ -451,25 +518,16 @@ void MailStoreObserver::transmitFailed(const QMailAccountId &accountId)
     //: Summary of email sending failed notification
     //% "Email sending failed"
     QString summary = qtTrId("qmf-notification_send_failed_summary");
-    //: Preview of email sending failed notification
-    //% "Failed to send email from account %1"
-    QString previewBody = qtTrId("qmf-notification_send_failed_previewBody").arg(accountName);
     //: Body of email sending failed notification
     //% "Account %1"
     QString body = qtTrId("qmf-notification_send_failed_Body").arg(accountName);
-    //: Name of notification group for error notifications
-    //% "Warnings"
-    QString appName = qtTrId("qmf-notification_error_group");
 
     Notification sendFailure;
-    sendFailure.setAppName(appName);
-    sendFailure.setCategory("x-nemo.email.error");
+    initNotification(&sendFailure);
     sendFailure.setHintValue("x-nemo.email.sendFailed-accountId", accountId.toULongLong());
-    sendFailure.setPreviewSummary(summary);
-    sendFailure.setPreviewBody(previewBody);
     sendFailure.setSummary(summary);
     sendFailure.setBody(body);
-    sendFailure.setRemoteAction(::remoteAction("default", "", "openOutbox", QVariantList() << acctId));
+    sendFailure.setRemoteAction(::remoteAction("default", QString(), "openOutbox", QVariantList() << acctId));
 
     // If there is an existing failure for this notification, replace it
     QList<QObject *> existingNotifications(Notification::notifications());
@@ -506,6 +564,27 @@ void MailStoreObserver::accountInboxDisplayed(int accountId)
     QMailAccountId acctId(accountId);
     if (acctId.isValid()) {
         closeAccountNotifications(acctId);
+    }
+}
+
+void MailStoreObserver::clearFoldersToSync()
+{
+    _tempFoldersToSync.clear();
+}
+
+bool MailStoreObserver::messageInFolderToSync(const QMailMessageMetaData &message)
+{
+    QMailAccountId accountId = message.parentAccountId();
+    QMailFolderId folderId = message.parentFolderId();
+
+    // Optimise by only getting the folder list once for each account
+    if (_tempFoldersToSync.contains(accountId)) {
+        QList<QMailFolderId> const &folders = _tempFoldersToSync.value(accountId);
+        return folders.contains(folderId);
+    } else {
+        QList<QMailFolderId> const &folders = QMailAccount(accountId).foldersToSync();
+        _tempFoldersToSync.insert(accountId, folders);
+        return folders.contains(folderId);
     }
 }
 

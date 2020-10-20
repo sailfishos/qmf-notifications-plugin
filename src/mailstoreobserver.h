@@ -53,6 +53,7 @@ struct MessageInfo
     QString subject;
     QDateTime timeStamp;
     QMailAccountId accountId;
+    bool hasMultipleRecipients;
 };
 
 class MailStoreObserver : public QObject
@@ -83,14 +84,19 @@ private:
     QMailStore *_storage;
     MessageHash _publishedMessages;
     QSet<QMailMessageId> _newMessages;
+    QHash<QMailAccountId, QList<QMailFolderId>> _tempFoldersToSync;
 
     void reloadNotifications();
     void closeNotifications();
     void closeAccountNotifications(const QMailAccountId &accountId);
+    void notificationClosed(uint reason);
+    void notificationActionInvoked(const QString &name);
     QSharedPointer<MessageInfo> constructMessageInfo(const QMailMessageMetaData &message);
     bool notifyMessage(const QMailMessageMetaData &message);
     void notifyOnly();
     void updateNotifications();
+    void clearFoldersToSync();
+    bool messageInFolderToSync(const QMailMessageMetaData &message);
 };
 
 #endif // MAILSTOREOBSERVER_H

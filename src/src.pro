@@ -6,7 +6,7 @@ QT += qmfclient qmfmessageserver
 QT -= gui
 
 CONFIG += link_pkgconfig
-PKGCONFIG += nemotransferengine-qt5 accounts-qt5 nemonotifications-qt5
+PKGCONFIG += nemotransferengine-qt5 accounts-qt5 nemonotifications-qt5 nemoemail-qt5
 
 SOURCES += \
     actionobserver.cpp \
@@ -21,8 +21,6 @@ HEADERS += \
     mailstoreobserver.h
 
 OTHER_FILES += \
-    x-nemo.email.conf \
-    x-nemo.email.error.conf \
     rpm/qmf-notifications-plugin.spec
 
 # translations
