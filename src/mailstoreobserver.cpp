@@ -330,8 +330,7 @@ void MailStoreObserver::updateNotifications()
         notification->setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
         notification->setSummary(message->sender.isEmpty() ? message->origin : message->sender);
         notification->setBody(message->subject);
-        notification->clearPreviewSummary();
-        notification->clearPreviewBody();
+        notification->setUrgency(Notification::Low);
         notification->setTimestamp(message->timeStamp);
         notification->setRemoteActions(singleMessageRemoteActionList(notification, *message));
 
