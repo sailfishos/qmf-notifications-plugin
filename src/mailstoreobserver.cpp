@@ -187,6 +187,7 @@ void MailStoreObserver::closeNotifications()
     qDeleteAll(existingNotifications);
 
     _publishedMessages.clear();
+    _newMessages.clear();
 }
 
 void MailStoreObserver::closeAccountNotifications(const QMailAccountId &accountId)
@@ -200,7 +201,7 @@ void MailStoreObserver::closeAccountNotifications(const QMailAccountId &accountI
                 const QMailMessageMetaData message(messageId);
                 if (message.parentAccountId() == accountId) {
                     notification->close();
-                    _publishedMessages.remove(messageId);
+                    removeMessage(messageId);
                 }
             }
         }
@@ -285,7 +286,7 @@ void MailStoreObserver::updateNotifications()
         }
 
         for (const QMailMessageId &id : messagesToRemove) {
-            _publishedMessages.remove(id);
+            removeMessage(id);
         }
     }
 
@@ -353,7 +354,16 @@ void MailStoreObserver::actionsCompleted()
 
         updateNotifications();
 
-        if (!_newMessages.isEmpty()) {
+        QVector<QSharedPointer<MessageInfo>> newMessages;
+        for (const QMailMessageId &messageId : _newMessages) {
+            if (QSharedPointer<MessageInfo> message = _publishedMessages.value(messageId)) {
+                newMessages.append(message);
+            }
+        }
+
+        _newMessages.clear();
+
+        if (!newMessages.isEmpty()) {
             // Notify the user of new messages
             if (_appOnScreen) {
                 notifyOnly();
@@ -368,9 +378,8 @@ void MailStoreObserver::actionsCompleted()
                 summaryNotification->setIsTransient(true);
                 summaryNotification->setHintValue("x-nemo-feedback", QStringLiteral("email"));
 
-                if (_newMessages.count() == 1) {
-                    const QMailMessageId messageId(*_newMessages.begin());
-                    const MessageInfo *message(_publishedMessages[messageId].data());
+                if (newMessages.count() == 1) {
+                    const QSharedPointer<MessageInfo> message = newMessages.first();
 
                     summaryNotification->setPreviewSummary(message->sender.isEmpty() ? message->origin : message->sender);
                     summaryNotification->setPreviewBody(message->subject);
@@ -382,12 +391,11 @@ void MailStoreObserver::actionsCompleted()
                 } else {
                     //: Summary of new email(s) notification
                     //% "You have %n new email(s)"
-                    summaryNotification->setPreviewSummary(qtTrId("qmf-notification_new_email_banner_notification", _newMessages.count()));
+                    summaryNotification->setPreviewSummary(qtTrId("qmf-notification_new_email_banner_notification", newMessages.count()));
 
                     // Find if these messages are all for the same account
                     QMailAccountId firstAccountId;
-                    for (const QMailMessageId &messageId : _newMessages) {
-                        const MessageInfo *message(_publishedMessages[messageId].data());
+                    for (const QSharedPointer<MessageInfo> &message : newMessages) {
                         if (!firstAccountId.isValid()) {
                             firstAccountId = message->accountId;
                         } else if (message->accountId != firstAccountId) {
@@ -412,8 +420,6 @@ void MailStoreObserver::actionsCompleted()
 
                 summaryNotification->publish();
             }
-
-            _newMessages.clear();
         }
     }
 }
@@ -455,13 +461,18 @@ void MailStoreObserver::removeMessages(const QMailMessageIdList &ids)
 {
     for (const QMailMessageId &id : ids) {
         if (_publishedMessages.contains(id)) {
-            _publishedMessages.remove(id);
-            _newMessages.remove(id);
+            removeMessage(id);
             _publicationChanges = true;
         }
     }
     // Local action not handled by action observer
     actionsCompleted();
+}
+
+void MailStoreObserver::removeMessage(const QMailMessageId &id)
+{
+    _publishedMessages.remove(id);
+    _newMessages.remove(id);
 }
 
 void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
@@ -475,8 +486,7 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
             // Check if message was read
             const QMailMessageMetaData message(id);
             if (!notifyMessage(message)) {
-                _publishedMessages.remove(id);
-                _newMessages.remove(id);
+                removeMessage(id);
                 _publicationChanges = true;
             }
         }

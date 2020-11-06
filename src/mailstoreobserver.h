@@ -97,6 +97,7 @@ private:
     void updateNotifications();
     void clearFoldersToSync();
     bool messageInFolderToSync(const QMailMessageMetaData &message);
+    void removeMessage(const QMailMessageId &id);
 };
 
 #endif // MAILSTOREOBSERVER_H
