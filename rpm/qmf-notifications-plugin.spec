@@ -3,7 +3,7 @@ Summary:    Notifications plugin for Qt Messaging Framework (QMF)
 Version:    0.2.7
 Release:    1
 License:    BSD
-URL:        https://git.merproject.org/mer-core/qmf-notifications-plugin
+URL:        https://github.com/sailfishos/qmf-notifications-plugin
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(QmfClient)
@@ -27,11 +27,11 @@ BuildRequires:  qt5-qttools-linguist
 make %{?_smp_mflags}
 
 %install
-rm -rf %{buildroot}
 %qmake5_install
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE.BSD
 %{_libdir}/qt5/plugins/messageserverplugins/libnotifications.so
 %{_datadir}/translations/qmf-notifications_eng_en.qm
 
