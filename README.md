@@ -8,6 +8,6 @@ Notifications plugin for Qt Messaging Framework (QMF) [1].
  
  [1] - https://github.com/qt-labs/messagingframework
 
- [2] - https://git.merproject.org/mer-core/transfer-engine
+ [2] - https://github.com/sailfishos/transfer-engine
  
- [3] - https://git.merproject.org/mer-core/nemo-qml-plugin-notifications
+ [3] - https://github.com/sailfishos/nemo-qml-plugin-notifications

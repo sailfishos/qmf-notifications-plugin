@@ -231,7 +231,7 @@ QSharedPointer<MessageInfo> MailStoreObserver::constructMessageInfo(const QMailM
 // notified since QMailMessage::NoNotification is used
 bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
 {
-    if (message.messageType()==QMailMessage::Email &&
+    if (message.messageType() == QMailMessage::Email &&
         !(message.status() & QMailMessage::Read) &&
         !(message.status() & QMailMessage::Temporary) &&
         !(message.status() & QMailMessage::NoNotification) &&
