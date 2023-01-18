@@ -327,7 +327,6 @@ void MailStoreObserver::updateNotifications()
         initNotification(notification);
         notification->setAppName(properties.first);
         notification->setAppIcon(properties.second);
-        notification->setHintValue("x-nemo-feedback", "email_exists");
         notification->setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
         notification->setSummary(message->sender.isEmpty() ? message->origin : message->sender);
         notification->setBody(message->subject);
@@ -376,7 +375,7 @@ void MailStoreObserver::actionsCompleted()
 
                 initNotification(summaryNotification);
                 summaryNotification->setIsTransient(true);
-                summaryNotification->setHintValue("x-nemo-feedback", QStringLiteral("email"));
+                summaryNotification->setHintValue("x-nemo-feedback", QStringLiteral("email_exists"));
 
                 if (newMessages.count() == 1) {
                     const QSharedPointer<MessageInfo> message = newMessages.first();
