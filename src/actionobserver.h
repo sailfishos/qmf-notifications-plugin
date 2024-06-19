@@ -76,6 +76,8 @@ class ActionObserver : public QObject
 public:
     explicit ActionObserver(QObject *parent = 0);
 
+    bool hasRunningAction() const;
+
 signals:
     void actionsCompleted();
     void transmitCompleted(const QMailAccountId &accountId);

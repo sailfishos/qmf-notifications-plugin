@@ -62,6 +62,9 @@ class MailStoreObserver : public QObject
 public:
     explicit MailStoreObserver(QObject *parent = 0);
 
+signals:
+    void mailStoreChanges();
+
 public slots:
     void publishChanges();
     void transmitCompleted(const QMailAccountId &accountId);
