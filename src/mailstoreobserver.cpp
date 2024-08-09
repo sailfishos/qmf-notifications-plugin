@@ -50,7 +50,10 @@ const auto dbusInterface = QStringLiteral("com.jolla.email.ui");
 const auto publishedMessageId = QStringLiteral("x-nemo.email.published-message-id");
 const auto markAsReadAction = QStringLiteral("markAsRead");
 
-QVariant remoteAction(const QString &name, const QString &displayName, const QString &method, const QVariantList &arguments = QVariantList())
+const int MaxNotificationsPerAccount = 100;
+
+QVariant remoteAction(const QString &name, const QString &displayName, const QString &method,
+                      const QVariantList &arguments = QVariantList())
 {
     return Notification::remoteAction(name, displayName, dbusService, dbusPath, dbusInterface, method, arguments);
 }
@@ -124,26 +127,31 @@ MailStoreObserver::MailStoreObserver(QObject *parent) :
 {
     _storage = QMailStore::instance();
 
-    connect(_storage, SIGNAL(messagesAdded(const QMailMessageIdList&)),
-            this, SLOT(addMessages(const QMailMessageIdList&)));
-    connect(_storage, SIGNAL(messagesUpdated(const QMailMessageIdList&)),
-            this, SLOT(updateMessages(const QMailMessageIdList&)));
-    connect(_storage, SIGNAL(messagesRemoved(const QMailMessageIdList&)),
-            this, SLOT(removeMessages(const QMailMessageIdList&)));
+    connect(_storage, &QMailStore::messagesAdded,
+            this, &MailStoreObserver::addMessages);
+    connect(_storage, &QMailStore::messagesUpdated,
+            this, &MailStoreObserver::updateMessages);
+    connect(_storage, &QMailStore::messagesRemoved,
+            this, &MailStoreObserver::removeMessages);
 
     reloadNotifications();
 
     QDBusConnection dbusSession(QDBusConnection::sessionBus());
-    dbusSession.connect(QString(), dbusPath, dbusInterface, "displayEntered", this, SLOT(setNotifyOff()));
-    dbusSession.connect(QString(), dbusPath, dbusInterface, "displayExit", this, SLOT(setNotifyOn()));
-    dbusSession.connect(QString(), dbusPath, dbusInterface, "combinedInboxDisplayed", this, SLOT(combinedInboxDisplayed()));
-    dbusSession.connect(QString(), dbusPath, dbusInterface, "accountInboxDisplayed", this, SLOT(accountInboxDisplayed(int)));
+    dbusSession.connect(QString(), dbusPath, dbusInterface, "displayEntered",
+                        this, SLOT(setNotifyOff()));
+    dbusSession.connect(QString(), dbusPath, dbusInterface, "displayExit",
+                        this, SLOT(setNotifyOn()));
+    dbusSession.connect(QString(), dbusPath, dbusInterface, "combinedInboxDisplayed",
+                        this, SLOT(combinedInboxDisplayed()));
+    dbusSession.connect(QString(), dbusPath, dbusInterface, "accountInboxDisplayed",
+                        this, SLOT(accountInboxDisplayed(int)));
 }
 
 void MailStoreObserver::reloadNotifications()
 {
-    const QMailAccountIdList enabledAccounts(QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
-                                                                                 & QMailAccountKey::status(QMailAccount::Enabled)));
+    const QMailAccountIdList enabledAccounts(
+                QMailStore::instance()->queryAccounts(QMailAccountKey::messageType(QMailMessage::Email)
+                                                      & QMailAccountKey::status(QMailAccount::Enabled)));
 
     clearFoldersToSync();
     // Find the set of messages we've previously published notifications for
@@ -160,7 +168,7 @@ void MailStoreObserver::reloadNotifications()
                 // Checks if parent account is still valid
                 // accounts can be removed when messageServer is not running.
                 if (enabledAccounts.contains(message.parentAccountId())) {
-                    if (notifyMessage(message)) {
+                    if (shouldNotify(message)) {
                         _publishedMessages.insert(messageId, constructMessageInfo(message));
                         published = true;
                     }
@@ -175,7 +183,7 @@ void MailStoreObserver::reloadNotifications()
     qDeleteAll(existingNotifications);
 }
 
-// Close existent notification
+// Close existing notifications
 void MailStoreObserver::closeNotifications()
 {
     QList<QObject *> existingNotifications(Notification::notifications());
@@ -229,29 +237,15 @@ QSharedPointer<MessageInfo> MailStoreObserver::constructMessageInfo(const QMailM
 
 // Check if this message should be notified, old messages are not
 // notified since QMailMessage::NoNotification is used
-bool MailStoreObserver::notifyMessage(const QMailMessageMetaData &message)
+bool MailStoreObserver::shouldNotify(const QMailMessageMetaData &message)
 {
-    if (message.messageType() == QMailMessage::Email &&
-        !(message.status() & QMailMessage::Read) &&
-        !(message.status() & QMailMessage::Temporary) &&
-        !(message.status() & QMailMessage::NoNotification) &&
-        !(message.status() & QMailMessage::Junk) &&
-        !(message.status() & QMailMessage::Trash) &&
-        messageInFolderToSync(message)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-// App is on screen beep only
-void MailStoreObserver::notifyOnly()
-{
-    Notification notification;
-    initNotification(&notification);
-    notification.setIsTransient(true);
-    notification.setHintValue("x-nemo-feedback", QStringLiteral("email"));
-    notification.publish();
+    return message.messageType() == QMailMessage::Email
+            && !(message.status() & (QMailMessage::Read
+                                     | QMailMessage::Temporary
+                                     | QMailMessage::NoNotification
+                                     | QMailMessage::Junk
+                                     | QMailMessage::Trash))
+            && messageInFolderToSync(message);
 }
 
 void MailStoreObserver::updateNotifications()
@@ -347,7 +341,7 @@ void MailStoreObserver::updateNotifications()
 
 // ################ Slots #####################
 
-void MailStoreObserver::actionsCompleted()
+void MailStoreObserver::publishChanges()
 {
     if (_publicationChanges) {
         _publicationChanges = false;
@@ -366,7 +360,12 @@ void MailStoreObserver::actionsCompleted()
         if (!newMessages.isEmpty()) {
             // Notify the user of new messages
             if (_appOnScreen) {
-                notifyOnly();
+                // just a simple feedback when app is on screen
+                Notification notification;
+                initNotification(&notification);
+                notification.setIsTransient(true);
+                notification.setHintValue("x-nemo-feedback", QStringLiteral("email"));
+                notification.publish();
             } else {
                 Notification *summaryNotification = new Notification(this);
                 connect(summaryNotification, &Notification::closed,
@@ -391,7 +390,8 @@ void MailStoreObserver::actionsCompleted()
                 } else {
                     //: Summary of new email(s) notification
                     //% "You have %n new email(s)"
-                    summaryNotification->setPreviewSummary(qtTrId("qmf-notification_new_email_banner_notification", newMessages.count()));
+                    summaryNotification->setPreviewSummary(qtTrId("qmf-notification_new_email_banner_notification",
+                                                                  newMessages.count()));
 
                     // Find if these messages are all for the same account
                     QMailAccountId firstAccountId;
@@ -407,7 +407,8 @@ void MailStoreObserver::actionsCompleted()
                     if (firstAccountId.isValid()) {
                         // Show the inbox for this account
                         const QVariant varId(static_cast<int>(firstAccountId.toULongLong()));
-                        summaryNotification->setRemoteAction(::remoteAction("default", QString(), "openInbox", QVariantList() << varId));
+                        summaryNotification->setRemoteAction(::remoteAction("default", QString(), "openInbox",
+                                                                            QVariantList() << varId));
 
                         // Also override the icon to be the icon associated with this account
                         QMailAccount account(firstAccountId);
@@ -449,7 +450,7 @@ void MailStoreObserver::addMessages(const QMailMessageIdList &ids)
         const QMailMessageMetaData message(id);
 
         // Workaround for plugin that try to add same message twice
-        if (notifyMessage(message) && !_publishedMessages.contains(id)) {
+        if (shouldNotify(message) && !_publishedMessages.contains(id)) {
             _publishedMessages.insert(id, constructMessageInfo(message));
             _newMessages.insert(id);
             _publicationChanges = true;
@@ -466,7 +467,7 @@ void MailStoreObserver::removeMessages(const QMailMessageIdList &ids)
         }
     }
     // Local action not handled by action observer
-    actionsCompleted();
+    publishChanges();
 }
 
 void MailStoreObserver::removeMessage(const QMailMessageId &id)
@@ -485,7 +486,7 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
         if (_publishedMessages.contains(id)) {
             // Check if message was read
             const QMailMessageMetaData message(id);
-            if (!notifyMessage(message)) {
+            if (!shouldNotify(message)) {
                 removeMessage(id);
                 _publicationChanges = true;
             }
@@ -514,7 +515,8 @@ void MailStoreObserver::transmitFailed(const QMailAccountId &accountId)
 {
     // Check if there are messages queued to send, transmition failed can be emitted for account testing or by other processes
     // working with the mail store.
-    QMailMessageKey outboxFilter(QMailMessageKey::status(QMailMessage::Outbox) & ~QMailMessageKey::status(QMailMessage::Trash));
+    QMailMessageKey outboxFilter(QMailMessageKey::status(QMailMessage::Outbox)
+                                 & ~QMailMessageKey::status(QMailMessage::Trash));
     QMailMessageKey accountKey(QMailMessageKey::parentAccountId(accountId));
     if (!QMailStore::instance()->countMessages(accountKey & outboxFilter)) {
         return;
@@ -596,4 +598,3 @@ bool MailStoreObserver::messageInFolderToSync(const QMailMessageMetaData &messag
         return folders.contains(folderId);
     }
 }
-

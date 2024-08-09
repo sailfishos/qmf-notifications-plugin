@@ -53,12 +53,12 @@ RunningAction::RunningAction(QSharedPointer<QMailActionInfo> action,
     _accountsCache(accountsCache),
     _transferClient(new TransferEngineClient(this))
 {
-    connect(_action.data(), SIGNAL(activityChanged(QMailServiceAction::Activity)),
-            this, SLOT(activityChanged(QMailServiceAction::Activity)));
-    connect(_action.data(), SIGNAL(statusAccountIdChanged(const QMailAccountId&)),
-            this, SLOT(statusAccountIdChanged(const QMailAccountId&)));
-    connect(_action.data(), SIGNAL(progressChanged(uint, uint)),
-            this, SLOT(progressChanged(uint, uint)));
+    connect(_action.data(), &QMailActionInfo::activityChanged,
+            this, &RunningAction::activityChanged);
+    connect(_action.data(), &QMailActionInfo::statusAccountIdChanged,
+            this, &RunningAction::statusAccountIdChanged);
+    connect(_action.data(), &QMailActionInfo::progressChanged,
+            this, &RunningAction::progressChanged);
 }
 
 void RunningAction::activityChanged(QMailServiceAction::Activity activity)
@@ -137,13 +137,13 @@ void RunningAction::statusAccountIdChanged(const QMailAccountId &accountId)
 
 }
 
-ActionObserver::ActionObserver(QObject *parent) :
-    QObject(parent),
-    _accountsCache(new AccountsCache(this)),
-    _actionObserver(new QMailActionObserver(this))
+ActionObserver::ActionObserver(QObject *parent)
+    : QObject(parent)
+    , _accountsCache(new AccountsCache(this))
+    , _actionObserver(new QMailActionObserver(this))
 {
-    connect(_actionObserver, SIGNAL(actionsChanged(QList<QSharedPointer<QMailActionInfo> >)),
-        this, SLOT(actionsChanged(QList<QSharedPointer<QMailActionInfo> >)));
+    connect(_actionObserver, &QMailActionObserver::actionsChanged,
+            this, &ActionObserver::actionsChanged);
 }
 
 // Report only long sync type of actions.
@@ -151,30 +151,35 @@ ActionObserver::ActionObserver(QObject *parent) :
 // that only happen on email client UI is visible(dowload inline images, message parts, ...)
 bool ActionObserver::isNotificationAction(QMailServerRequestType requestType)
 {
-    if (requestType == TransmitMessagesRequestType || requestType == RetrieveFolderListRequestType
-            || requestType == RetrieveMessageListRequestType || requestType == RetrieveMessagesRequestType
-            || requestType == RetrieveMessageRangeRequestType || requestType == RetrieveAllRequestType
-            || requestType == SynchronizeRequestType || requestType == RetrieveNewMessagesRequestType) {
-        return true;
-    }
-    return false;
+    return requestType == TransmitMessagesRequestType
+            || requestType == RetrieveFolderListRequestType
+            || requestType == RetrieveMessageListRequestType
+            || requestType == RetrieveMessagesRequestType
+            || requestType == RetrieveMessageRangeRequestType
+            || requestType == RetrieveAllRequestType
+            || requestType == SynchronizeRequestType
+            || requestType == RetrieveNewMessagesRequestType;
 }
 
 // ################ Slots #####################
 
 void ActionObserver::actionsChanged(QList<QSharedPointer<QMailActionInfo> > actionsList)
 {
-    foreach(QSharedPointer<QMailActionInfo> action, actionsList) {
+    for (QSharedPointer<QMailActionInfo> action : actionsList) {
         // discard actions already in the queue and fast actions to avoid spamming transfer-ui
         if (!_runningActions.contains(action.data()->id()) && isNotificationAction(action.data()->requestType())
                 && !_completedActions.contains(action.data()->id())) {
             RunningAction* runningAction = new RunningAction(action, _accountsCache, this);
             _runningActions.insert(action.data()->id(), runningAction);
-            connect(runningAction, SIGNAL(actionComplete(quint64)), this, SLOT(actionCompleted(quint64)));
+            connect(runningAction, &RunningAction::actionComplete,
+                    this, &ActionObserver::actionCompleted);
+
             // connect notifications signals if is a transmit action
             if (action.data()->requestType() == TransmitMessagesRequestType) {
-                connect(runningAction, SIGNAL(transmitCompleted(QMailAccountId)), this, SIGNAL(transmitCompleted(QMailAccountId)));
-                connect(runningAction, SIGNAL(transmitFailed(QMailAccountId)), this, SIGNAL(transmitFailed(QMailAccountId)));
+                connect(runningAction, &RunningAction::transmitCompleted,
+                        this, &ActionObserver::transmitCompleted);
+                connect(runningAction, &RunningAction::transmitFailed,
+                        this, &ActionObserver::transmitFailed);
             }
         }
     }
@@ -185,7 +190,7 @@ void ActionObserver::actionsChanged(QList<QSharedPointer<QMailActionInfo> > acti
              _completedActions.clear();
          }
          // No more actions running, wait before emiting the signal,
-         // in case of mutiple accounts sync, new actions will start
+         // in case of multiple accounts sync, new actions will start
          // only after first ones are done.
          QTimer::singleShot(1000, this, SLOT(emptyActionQueue()));
     }

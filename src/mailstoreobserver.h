@@ -60,17 +60,17 @@ class MailStoreObserver : public QObject
 {
     Q_OBJECT
 public:
-    enum { MaxNotificationsPerAccount = 100 };
-
     explicit MailStoreObserver(QObject *parent = 0);
 
+public slots:
+    void publishChanges();
+    void transmitCompleted(const QMailAccountId &accountId);
+    void transmitFailed(const QMailAccountId &accountId);
+
 private slots:
-    void actionsCompleted();
     void addMessages(const QMailMessageIdList &ids);
     void removeMessages(const QMailMessageIdList &ids);
     void updateMessages(const QMailMessageIdList &ids);
-    void transmitCompleted(const QMailAccountId &accountId);
-    void transmitFailed(const QMailAccountId &accountId);
     void setNotifyOn();
     void setNotifyOff();
     void combinedInboxDisplayed();
@@ -92,8 +92,7 @@ private:
     void notificationClosed(uint reason);
     void notificationActionInvoked(const QString &name);
     QSharedPointer<MessageInfo> constructMessageInfo(const QMailMessageMetaData &message);
-    bool notifyMessage(const QMailMessageMetaData &message);
-    void notifyOnly();
+    bool shouldNotify(const QMailMessageMetaData &message);
     void updateNotifications();
     void clearFoldersToSync();
     bool messageInFolderToSync(const QMailMessageMetaData &message);
