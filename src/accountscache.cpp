@@ -37,12 +37,15 @@
 // accounts-qt
 #include <Accounts/Provider>
 
-AccountsCache::AccountsCache(QObject *parent) :
-    QObject(parent)
+AccountsCache::AccountsCache(QObject *parent)
+    : QObject(parent)
 {
-    connect(_manager, SIGNAL(accountCreated(Accounts::AccountId)), this, SLOT(accountCreated(Accounts::AccountId)));
-    connect(_manager, SIGNAL(accountRemoved(Accounts::AccountId)), this, SLOT(accountRemoved(Accounts::AccountId)));
-    connect(_manager, SIGNAL(enabledEvent(Accounts::AccountId)), this, SLOT(enabledEvent(Accounts::AccountId)));
+    connect(_manager, &Accounts::Manager::accountCreated,
+            this, &AccountsCache::accountCreated);
+    connect(_manager, &Accounts::Manager::accountRemoved,
+            this, &AccountsCache::accountRemoved);
+    connect(_manager, &Accounts::Manager::enabledEvent,
+            this, &AccountsCache::enabledEvent);
     initCache();
 }
 
@@ -50,7 +53,7 @@ void AccountsCache::initCache()
 {
     Accounts::AccountIdList accountIDList = _manager->accountListEnabled("e-mail");
 
-    foreach (Accounts::AccountId accountId, accountIDList) {
+    for (Accounts::AccountId accountId : accountIDList) {
         Accounts::Account* account = Accounts::Account::fromId(_manager, accountId, this);
         if (account->enabled()) {
             _accountsList.insert(accountId, account);

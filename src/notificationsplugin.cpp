@@ -72,12 +72,12 @@ void NotificationsPlugin::exec()
     // Connect actions observer to mail store observer
     // to report when all actions are completed and
     // only then emit notifications.
-    connect(_actionObserver, SIGNAL(actionsCompleted()),
-            _mailStoreObserver, SLOT(actionsCompleted()));
-    connect(_actionObserver, SIGNAL(transmitCompleted(QMailAccountId)),
-            _mailStoreObserver, SLOT(transmitCompleted(QMailAccountId)));
-    connect(_actionObserver, SIGNAL(transmitFailed(QMailAccountId)),
-            _mailStoreObserver, SLOT(transmitFailed(QMailAccountId)));
+    connect(_actionObserver, &ActionObserver::actionsCompleted,
+            _mailStoreObserver, &MailStoreObserver::publishChanges);
+    connect(_actionObserver, &ActionObserver::transmitCompleted,
+            _mailStoreObserver, &MailStoreObserver::transmitCompleted);
+    connect(_actionObserver, &ActionObserver::transmitFailed,
+            _mailStoreObserver, &MailStoreObserver::transmitFailed);
     qMailLog(Messaging) << "Initiating mail notifications plugin";
 }
 
