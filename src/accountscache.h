@@ -39,12 +39,10 @@
 #include <Accounts/Manager>
 #include <Accounts/Account>
 
-// qmf
-#include <ssoaccountmanager.h>
-
 // Qt
 #include <QObject>
 #include <QUrl>
+#include <QSharedPointer>
 #include <QDebug>
 
 struct AccountInfo
@@ -69,7 +67,7 @@ private slots:
 private:
     void initCache();
     bool isEnabledMailAccount(const Accounts::AccountId accountId);
-    SSOAccountManager _manager;
+    QSharedPointer<Accounts::Manager> _manager;
     QHash<Accounts::AccountId, Accounts::Account*> _accountsList;
 };
 
