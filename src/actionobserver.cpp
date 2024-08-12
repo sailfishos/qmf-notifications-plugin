@@ -64,8 +64,8 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
 {
     switch (activity) {
     case QMailServiceAction::Failed:
-        if (_action.data()->requestType() == TransmitMessagesRequestType) {
-            QMailAccountId accountId = _action.data()->statusAccountId();
+        if (_action->requestType() == TransmitMessagesRequestType) {
+            QMailAccountId accountId = _action->statusAccountId();
             if (accountId.isValid()) {
                 emit transmitFailed(accountId);
             } else {
@@ -79,11 +79,11 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
             _transferClient->finishTransfer(_transferId, TransferEngineClient::TransferInterrupted, error);
             _runningInTransferEngine = false;
         }
-        emit actionComplete(_action.data()->id());
+        emit actionComplete(_action->id());
         break;
     case QMailServiceAction::Successful:
-        if (_action.data()->requestType() == TransmitMessagesRequestType) {
-            QMailAccountId accountId = _action.data()->statusAccountId();
+        if (_action->requestType() == TransmitMessagesRequestType) {
+            QMailAccountId accountId = _action->statusAccountId();
             if (accountId.isValid()) {
                 emit transmitCompleted(accountId);
             } else {
@@ -94,7 +94,7 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
             _transferClient->finishTransfer(_transferId, TransferEngineClient::TransferFinished);
             _runningInTransferEngine = false;
         }
-        emit actionComplete(_action.data()->id());
+        emit actionComplete(_action->id());
         break;
     default:
         // we don't need to care about pending and in progress states
@@ -165,15 +165,15 @@ void ActionObserver::actionsChanged(QList<QSharedPointer<QMailActionInfo> > acti
 {
     for (QSharedPointer<QMailActionInfo> action : actionsList) {
         // discard actions already in the queue and fast actions to avoid spamming transfer-ui
-        if (!_runningActions.contains(action.data()->id()) && isNotificationAction(action.data()->requestType())
-                && !_completedActions.contains(action.data()->id())) {
+        if (!_runningActions.contains(action->id()) && isNotificationAction(action->requestType())
+                && !_completedActions.contains(action->id())) {
             RunningAction* runningAction = new RunningAction(action, this);
-            _runningActions.insert(action.data()->id(), runningAction);
+            _runningActions.insert(action->id(), runningAction);
             connect(runningAction, &RunningAction::actionComplete,
                     this, &ActionObserver::actionCompleted);
 
             // connect notifications signals if is a transmit action
-            if (action.data()->requestType() == TransmitMessagesRequestType) {
+            if (action->requestType() == TransmitMessagesRequestType) {
                 connect(runningAction, &RunningAction::transmitCompleted,
                         this, &ActionObserver::transmitCompleted);
                 connect(runningAction, &RunningAction::transmitFailed,
