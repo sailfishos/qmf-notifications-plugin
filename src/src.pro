@@ -10,13 +10,11 @@ PKGCONFIG += nemotransferengine-qt5 accounts-qt5 nemonotifications-qt5 nemoemail
 
 SOURCES += \
     actionobserver.cpp \
-    accountscache.cpp \
     notificationsplugin.cpp \
     mailstoreobserver.cpp
 
 HEADERS += \
     actionobserver.h \
-    accountscache.h \
     notificationsplugin.h \
     mailstoreobserver.h
 
