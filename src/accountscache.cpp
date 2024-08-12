@@ -37,14 +37,22 @@
 // accounts-qt
 #include <Accounts/Provider>
 
+// AccountsCache objects share the same Account manager.
+static QSharedPointer<Accounts::Manager> managerInstance;
+
 AccountsCache::AccountsCache(QObject *parent)
     : QObject(parent)
 {
-    connect(_manager, &Accounts::Manager::accountCreated,
+    if (!managerInstance) {
+        managerInstance = QSharedPointer<Accounts::Manager>(new Accounts::Manager(QLatin1String("e-mail")));
+        managerInstance->setAbortOnTimeout(true);
+    }
+    _manager = managerInstance;
+    connect(_manager.data(), &Accounts::Manager::accountCreated,
             this, &AccountsCache::accountCreated);
-    connect(_manager, &Accounts::Manager::accountRemoved,
+    connect(_manager.data(), &Accounts::Manager::accountRemoved,
             this, &AccountsCache::accountRemoved);
-    connect(_manager, &Accounts::Manager::enabledEvent,
+    connect(_manager.data(), &Accounts::Manager::enabledEvent,
             this, &AccountsCache::enabledEvent);
     initCache();
 }
@@ -54,7 +62,7 @@ void AccountsCache::initCache()
     Accounts::AccountIdList accountIDList = _manager->accountListEnabled("e-mail");
 
     for (Accounts::AccountId accountId : accountIDList) {
-        Accounts::Account* account = Accounts::Account::fromId(_manager, accountId, this);
+        Accounts::Account* account = Accounts::Account::fromId(_manager.data(), accountId, this);
         if (account->enabled()) {
             _accountsList.insert(accountId, account);
         } else {
@@ -65,7 +73,7 @@ void AccountsCache::initCache()
 
 bool AccountsCache::isEnabledMailAccount(const Accounts::AccountId accountId)
 {
-    QScopedPointer<Accounts::Account> account(Accounts::Account::fromId(_manager, accountId, this));
+    QScopedPointer<Accounts::Account> account(Accounts::Account::fromId(_manager.data(), accountId, this));
     if (!account)
         return false;
 
@@ -82,7 +90,7 @@ bool AccountsCache::isEnabledMailAccount(const Accounts::AccountId accountId)
 void AccountsCache::accountCreated(Accounts::AccountId accountId)
 {
     if (isEnabledMailAccount(accountId)) {
-        Accounts::Account *account = Accounts::Account::fromId(_manager, accountId, this);
+        Accounts::Account *account = Accounts::Account::fromId(_manager.data(), accountId, this);
         _accountsList.insert(accountId, account);
     }
 }
@@ -98,7 +106,7 @@ void AccountsCache::enabledEvent(Accounts::AccountId accountId)
 {
     if (isEnabledMailAccount(accountId)) {
         if (!_accountsList.contains(accountId)) {
-            Accounts::Account* account = Accounts::Account::fromId(_manager, accountId, this);
+            Accounts::Account* account = Accounts::Account::fromId(_manager.data(), accountId, this);
             _accountsList.insert(accountId, account);
         }
     } else if (_accountsList.contains(accountId)) {
