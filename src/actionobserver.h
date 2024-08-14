@@ -35,8 +35,6 @@
 #ifndef ACTIONOBSERVER_H
 #define ACTIONOBSERVER_H
 
-#include "accountscache.h"
-
 // nemotransferengine-qt5
 #include <transferengineclient.h>
 
@@ -52,7 +50,7 @@ class RunningAction : public QObject
     Q_OBJECT
 public:
     explicit RunningAction(QSharedPointer<QMailActionInfo> action,
-                           AccountsCache *accountsCache, QObject *parent = 0);
+                           QObject *parent = 0);
 
 private slots:
     void activityChanged(QMailServiceAction::Activity activity);
@@ -69,7 +67,6 @@ private:
     int _transferId;
     bool _runningInTransferEngine;
     QSharedPointer<QMailActionInfo> _action;
-    AccountsCache *_accountsCache;
     TransferEngineClient *_transferClient;
 };
 
@@ -78,8 +75,6 @@ class ActionObserver : public QObject
     Q_OBJECT
 public:
     explicit ActionObserver(QObject *parent = 0);
-
-    AccountsCache *_accountsCache;
 
 signals:
     void actionsCompleted();

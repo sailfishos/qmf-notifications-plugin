@@ -6,17 +6,15 @@ QT += qmfclient qmfmessageserver
 QT -= gui
 
 CONFIG += link_pkgconfig
-PKGCONFIG += nemotransferengine-qt5 accounts-qt5 nemonotifications-qt5 nemoemail-qt5
+PKGCONFIG += nemotransferengine-qt5 nemonotifications-qt5 nemoemail-qt5
 
 SOURCES += \
     actionobserver.cpp \
-    accountscache.cpp \
     notificationsplugin.cpp \
     mailstoreobserver.cpp
 
 HEADERS += \
     actionobserver.h \
-    accountscache.h \
     notificationsplugin.h \
     mailstoreobserver.h
 

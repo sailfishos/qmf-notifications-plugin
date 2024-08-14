@@ -44,13 +44,12 @@
 #include <QDebug>
 
 RunningAction::RunningAction(QSharedPointer<QMailActionInfo> action,
-                             AccountsCache *accountsCache, QObject *parent) :
+                             QObject *parent) :
     QObject(parent),
     _progress(0.0),
     _transferId(0),
     _runningInTransferEngine(false),
     _action(action),
-    _accountsCache(accountsCache),
     _transferClient(new TransferEngineClient(this))
 {
     connect(_action.data(), &QMailActionInfo::activityChanged,
@@ -65,8 +64,8 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
 {
     switch (activity) {
     case QMailServiceAction::Failed:
-        if (_action.data()->requestType() == TransmitMessagesRequestType) {
-            QMailAccountId accountId = _action.data()->statusAccountId();
+        if (_action->requestType() == TransmitMessagesRequestType) {
+            QMailAccountId accountId = _action->statusAccountId();
             if (accountId.isValid()) {
                 emit transmitFailed(accountId);
             } else {
@@ -80,11 +79,11 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
             _transferClient->finishTransfer(_transferId, TransferEngineClient::TransferInterrupted, error);
             _runningInTransferEngine = false;
         }
-        emit actionComplete(_action.data()->id());
+        emit actionComplete(_action->id());
         break;
     case QMailServiceAction::Successful:
-        if (_action.data()->requestType() == TransmitMessagesRequestType) {
-            QMailAccountId accountId = _action.data()->statusAccountId();
+        if (_action->requestType() == TransmitMessagesRequestType) {
+            QMailAccountId accountId = _action->statusAccountId();
             if (accountId.isValid()) {
                 emit transmitCompleted(accountId);
             } else {
@@ -95,7 +94,7 @@ void RunningAction::activityChanged(QMailServiceAction::Activity activity)
             _transferClient->finishTransfer(_transferId, TransferEngineClient::TransferFinished);
             _runningInTransferEngine = false;
         }
-        emit actionComplete(_action.data()->id());
+        emit actionComplete(_action->id());
         break;
     default:
         // we don't need to care about pending and in progress states
@@ -123,8 +122,8 @@ void RunningAction::statusAccountIdChanged(const QMailAccountId &accountId)
         qDebug() << Q_FUNC_INFO << "Account " << accountId.toULongLong()
                  << " was removed/disabled while action was in progress, no actions to report for invalid account.";
     } else if (!_runningInTransferEngine) {
-        AccountInfo acctInfo = _accountsCache->accountInfo(static_cast<Accounts::AccountId>(accountId.toULongLong()));
-        _transferId = _transferClient->createSyncEvent(acctInfo.name, QUrl(), acctInfo.providerIcon);
+        QMailAccount account(accountId);
+        _transferId = _transferClient->createSyncEvent(account.name(), QUrl(), QUrl(account.iconPath()));
         if (_transferId) {
             _runningInTransferEngine = true;
             _transferClient->startTransfer(_transferId);
@@ -139,7 +138,6 @@ void RunningAction::statusAccountIdChanged(const QMailAccountId &accountId)
 
 ActionObserver::ActionObserver(QObject *parent)
     : QObject(parent)
-    , _accountsCache(new AccountsCache(this))
     , _actionObserver(new QMailActionObserver(this))
 {
     connect(_actionObserver, &QMailActionObserver::actionsChanged,
@@ -167,15 +165,15 @@ void ActionObserver::actionsChanged(QList<QSharedPointer<QMailActionInfo> > acti
 {
     for (QSharedPointer<QMailActionInfo> action : actionsList) {
         // discard actions already in the queue and fast actions to avoid spamming transfer-ui
-        if (!_runningActions.contains(action.data()->id()) && isNotificationAction(action.data()->requestType())
-                && !_completedActions.contains(action.data()->id())) {
-            RunningAction* runningAction = new RunningAction(action, _accountsCache, this);
-            _runningActions.insert(action.data()->id(), runningAction);
+        if (!_runningActions.contains(action->id()) && isNotificationAction(action->requestType())
+                && !_completedActions.contains(action->id())) {
+            RunningAction* runningAction = new RunningAction(action, this);
+            _runningActions.insert(action->id(), runningAction);
             connect(runningAction, &RunningAction::actionComplete,
                     this, &ActionObserver::actionCompleted);
 
             // connect notifications signals if is a transmit action
-            if (action.data()->requestType() == TransmitMessagesRequestType) {
+            if (action->requestType() == TransmitMessagesRequestType) {
                 connect(runningAction, &RunningAction::transmitCompleted,
                         this, &ActionObserver::transmitCompleted);
                 connect(runningAction, &RunningAction::transmitFailed,
