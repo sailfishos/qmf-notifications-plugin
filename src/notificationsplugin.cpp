@@ -78,6 +78,12 @@ void NotificationsPlugin::exec()
             _mailStoreObserver, &MailStoreObserver::transmitCompleted);
     connect(_actionObserver, &ActionObserver::transmitFailed,
             _mailStoreObserver, &MailStoreObserver::transmitFailed);
+    connect(_mailStoreObserver, &MailStoreObserver::mailStoreChanges,
+            [this] () {
+                if (!_actionObserver->hasRunningAction()) {
+                    _mailStoreObserver->publishChanges();
+                }
+            });
     qMailLog(Messaging) << "Initiating mail notifications plugin";
 }
 

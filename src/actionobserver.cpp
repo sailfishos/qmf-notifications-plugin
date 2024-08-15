@@ -207,3 +207,8 @@ void ActionObserver::emptyActionQueue()
         emit actionsCompleted();
     }
 }
+
+bool ActionObserver::hasRunningAction() const
+{
+    return !_runningActions.isEmpty();
+}

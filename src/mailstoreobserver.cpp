@@ -466,8 +466,7 @@ void MailStoreObserver::removeMessages(const QMailMessageIdList &ids)
             _publicationChanges = true;
         }
     }
-    // Local action not handled by action observer
-    publishChanges();
+    emit mailStoreChanges();
 }
 
 void MailStoreObserver::removeMessage(const QMailMessageId &id)
@@ -492,6 +491,7 @@ void MailStoreObserver::updateMessages(const QMailMessageIdList &ids)
             }
         }
     }
+    emit mailStoreChanges();
 }
 
 void MailStoreObserver::transmitCompleted(const QMailAccountId &accountId)
