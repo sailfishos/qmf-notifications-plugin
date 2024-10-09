@@ -301,6 +301,8 @@ void MailStoreObserver::updateNotifications()
 
     // Update the notification for each current message that has been modified
     MessageHash::const_iterator it = _publishedMessages.constBegin(), end = _publishedMessages.constEnd();
+    bool feedbackSet = false;
+
     for ( ; it != end; ++it) {
         const QMailMessageId messageId(it.key());
         const MessageInfo *message(it.value().data());
@@ -321,7 +323,11 @@ void MailStoreObserver::updateNotifications()
         initNotification(notification);
         notification->setAppName(properties.first);
         notification->setAppIcon(properties.second);
-        notification->setHintValue("x-nemo-feedback", "email_exists");
+        if (!feedbackSet) {
+            feedbackSet = true;
+            // just set this once to ensure we don't play multiple tones etc
+            notification->setHintValue("x-nemo-feedback", "email_exists");
+        }
         notification->setHintValue(publishedMessageId, QString::number(messageId.toULongLong()));
         notification->setSummary(message->sender.isEmpty() ? message->origin : message->sender);
         notification->setBody(message->subject);
