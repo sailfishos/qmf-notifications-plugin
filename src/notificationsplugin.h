@@ -42,7 +42,21 @@
 #include <qmailmessageserverplugin.h>
 
 // Qt
+#include <QObject>
 #include <QtPlugin>
+
+class NotificationsService : public QMailMessageServerService
+{
+    Q_OBJECT
+
+public:
+    NotificationsService();
+    ~NotificationsService();
+
+private:
+    ActionObserver *_actionObserver;
+    MailStoreObserver *_mailStoreObserver;
+};
 
 class NotificationsPlugin : public QMailMessageServerPlugin
 {
@@ -54,12 +68,8 @@ public:
     ~NotificationsPlugin();
 
     virtual QString key() const;
-    virtual void exec();
-    virtual NotificationsPlugin* createService();
+    virtual QMailMessageServerService* createService();
 
-private:
-    ActionObserver *_actionObserver;
-    MailStoreObserver *_mailStoreObserver;
 };
 
 #endif // NOTIFICATIONSPLUGIN_H

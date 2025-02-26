@@ -41,8 +41,8 @@
 #include <QCoreApplication>
 #include <QTranslator>
 
-NotificationsPlugin::NotificationsPlugin(QObject *parent)
-    : QMailMessageServerPlugin(parent)
+NotificationsService::NotificationsService()
+    : QMailMessageServerService()
     , _actionObserver(new ActionObserver(this))
 {
     QString translationPath("/usr/share/translations/");
@@ -56,19 +56,7 @@ NotificationsPlugin::NotificationsPlugin(QObject *parent)
 
     // Initiate after the translator since it will use it
     _mailStoreObserver = new MailStoreObserver(this);
-}
 
-NotificationsPlugin::~NotificationsPlugin()
-{
-}
-
-NotificationsPlugin* NotificationsPlugin::createService()
-{
-    return this;
-}
-
-void NotificationsPlugin::exec()
-{
     // Connect actions observer to mail store observer
     // to report when all actions are completed and
     // only then emit notifications.
@@ -87,7 +75,25 @@ void NotificationsPlugin::exec()
     qMailLog(Messaging) << "Initiating mail notifications plugin";
 }
 
+NotificationsService::~NotificationsService()
+{
+}
+
+NotificationsPlugin::NotificationsPlugin(QObject *parent)
+    : QMailMessageServerPlugin(parent)
+{
+}
+
+NotificationsPlugin::~NotificationsPlugin()
+{
+}
+
 QString NotificationsPlugin::key() const
 {
     return "notifications";
+}
+
+QMailMessageServerService* NotificationsPlugin::createService()
+{
+    return new NotificationsService;
 }
