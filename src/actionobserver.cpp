@@ -43,14 +43,13 @@
 #include <QTimer>
 #include <QDebug>
 
-RunningAction::RunningAction(QSharedPointer<QMailActionInfo> action,
-                             QObject *parent) :
-    QObject(parent),
-    _progress(0.0),
-    _transferId(0),
-    _runningInTransferEngine(false),
-    _action(action),
-    _transferClient(new TransferEngineClient(this))
+RunningAction::RunningAction(QSharedPointer<QMailActionInfo> action, QObject *parent)
+    : QObject(parent)
+    , _progress(0.0)
+    , _transferId(0)
+    , _runningInTransferEngine(false)
+    , _action(action)
+    , _transferClient(new TransferEngineClient(this))
 {
     connect(_action.data(), &QMailActionInfo::activityChanged,
             this, &RunningAction::activityChanged);
