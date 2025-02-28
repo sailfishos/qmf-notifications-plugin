@@ -119,11 +119,11 @@ struct MessageEarlierComparator {
 
 }
 
-MailStoreObserver::MailStoreObserver(QObject *parent) :
-    QObject(parent),
-    _publicationChanges(false),
-    _appOnScreen(false),
-    _storage(0)
+MailStoreObserver::MailStoreObserver(QObject *parent)
+    : QObject(parent)
+    , _publicationChanges(false)
+    , _appOnScreen(false)
+    , _storage(0)
 {
     _storage = QMailStore::instance();
 
