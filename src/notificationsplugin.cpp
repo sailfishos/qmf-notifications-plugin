@@ -34,12 +34,10 @@
 
 #include "notificationsplugin.h"
 
-// QMF
-#include <qmaillog.h>
-
 // Qt
 #include <QCoreApplication>
 #include <QTranslator>
+#include <QDebug>
 
 NotificationsService::NotificationsService()
     : QMailMessageServerService()
@@ -72,7 +70,7 @@ NotificationsService::NotificationsService()
                     _mailStoreObserver->publishChanges();
                 }
             });
-    qMailLog(Messaging) << "Initiating mail notifications plugin";
+    qDebug() << "Initiating mail notifications plugin";
 }
 
 NotificationsService::~NotificationsService()
