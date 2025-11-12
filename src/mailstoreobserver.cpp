@@ -43,7 +43,7 @@
 
 namespace {
 
-const auto dbusService QStringLiteral("com.jolla.email.ui");
+const auto dbusService = QStringLiteral("com.jolla.email.ui");
 const auto dbusPath = QStringLiteral("/com/jolla/email/ui");
 const auto dbusInterface = QStringLiteral("com.jolla.email.ui");
 
