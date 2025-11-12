@@ -1,6 +1,6 @@
 Name:       qmf-notifications-plugin
 Summary:    Notifications plugin for Qt Messaging Framework (QMF)
-Version:    0.2.7
+Version:    0.3.0
 Release:    1
 License:    BSD
 URL:        https://github.com/sailfishos/qmf-notifications-plugin
@@ -36,7 +36,7 @@ License:    BSD
 
 %files
 %license LICENSE.BSD
-%{_libdir}/qt5/plugins/messageserverplugins/libnotifications.so
+%{_libdir}/qt5/plugins/messagingframework/messageserverplugins/libnotifications.so
 %{_datadir}/translations/qmf-notifications_eng_en.qm
 
 %files ts-devel

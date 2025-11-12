@@ -44,6 +44,6 @@ engineering_english_install.CONFIG += no_check_exist
 QMAKE_EXTRA_TARGETS += ts engineering_english
 PRE_TARGETDEPS += ts engineering_english
 
-target.path = $$[QT_INSTALL_PLUGINS]/messageserverplugins
+target.path = $$[QT_INSTALL_PLUGINS]/messagingframework/messageserverplugins
 
 INSTALLS += target ts_install engineering_english_install
