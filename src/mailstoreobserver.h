@@ -43,6 +43,7 @@
 
 // Qt
 #include <QObject>
+#include <QString>
 #include <QSharedPointer>
 
 struct MessageInfo

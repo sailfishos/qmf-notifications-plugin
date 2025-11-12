@@ -69,7 +69,6 @@ public:
 
     virtual QString key() const;
     virtual QMailMessageServerService* createService();
-
 };
 
 #endif // NOTIFICATIONSPLUGIN_H
