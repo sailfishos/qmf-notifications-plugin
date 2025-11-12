@@ -2,11 +2,10 @@ TEMPLATE = lib
 TARGET = notifications
 CONFIG += plugin hide_symbols
 
-QT += qmfclient qmfmessageserver
 QT -= gui
 
 CONFIG += link_pkgconfig
-PKGCONFIG += nemotransferengine-qt5 nemonotifications-qt5 nemoemail-qt5
+PKGCONFIG += nemotransferengine-qt5 nemonotifications-qt5 nemoemail-qt5 QmfClient QmfMessageServer
 
 SOURCES += \
     actionobserver.cpp \
